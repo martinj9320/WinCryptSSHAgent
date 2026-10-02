@@ -1,5 +1,19 @@
 # WinCrypt SSH Agent
 
+> [!Note]
+> This repository is a fork of [boypt/WinCryptSSHAgent](https://github.com/boypt/WinCryptSSHAgent), adding the `--smart-card-logon-only` option from [rfdonnelly/WinCryptSSHAgent](https://github.com/rfdonnelly/WinCryptSSHAgent).
+>
+> This option filters all certificates/keys except those that have both of the following Extended/Enhanced Key Usage OIDs:
+>
+>   * Client Authentication (1.3.6.1.5.5.7.3.2)
+>   * Smart Card Logon (1.3.6.1.4.1.311.20.2.2)
+>
+> ### Instructions
+>
+> 1. Download the [latest release](https://github.com/martinj9320/WinCryptSSHAgent/releases/tag/v1.2.3)
+> 2. Add a shortcut with the `--smart-card-logon-only` option to the `shell:startup` folder
+---
+
 > This repository is a maintained fork based on upstream [`buptczq/WinCryptSSHAgent`](https://github.com/buptczq/WinCryptSSHAgent) (base commit: `1e526e8`).
 
 ## Fork Enhancements
