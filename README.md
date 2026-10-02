@@ -8,12 +8,12 @@
 >   * Client Authentication (1.3.6.1.5.5.7.3.2)
 >   * Smart Card Logon (1.3.6.1.4.1.311.20.2.2)
 >
+> It has no affect on the self-service key import introduced in v1.2.0, enabling you to only use smart card certificates from the Windows Certificate Store alongside your SSH private keys.
+>
 > ### Instructions
 >
 > 1. Download the [latest release](https://github.com/martinj9320/WinCryptSSHAgent/releases/tag/v1.2.3)
 > 2. Add a shortcut with the `--smart-card-logon-only` option to the `shell:startup` folder
->
-> This option has no affect on the self-service key import introduced in v1.2.0, enabling you to only use smart card certificates from the Windows Certificate Store alongside your SSH private keys.
 ---
 
 > This repository is a maintained fork based on upstream [`buptczq/WinCryptSSHAgent`](https://github.com/buptczq/WinCryptSSHAgent) (base commit: `1e526e8`).
