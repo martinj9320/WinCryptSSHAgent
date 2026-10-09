@@ -1,59 +1,59 @@
 # WinCrypt SSH Agent
 
-> [!Note]
-> This repository is a fork of [boypt/WinCryptSSHAgent](https://github.com/boypt/WinCryptSSHAgent), adding the `--smart-card-logon-only` option from [rfdonnelly/WinCryptSSHAgent](https://github.com/rfdonnelly/WinCryptSSHAgent).
->
-> This option filters all certificates/keys except those that have both of the following Extended/Enhanced Key Usage OIDs:
->
+> [!NOTE]
+> This project builds on [boypt/WinCryptSSHAgent](https://github.com/boypt/WinCryptSSHAgent), a fork of [buptczq/WinCryptSSHAgent](https://github.com/buptczq/WinCryptSSHAgent), and includes selected changes from [rfdonnelly/WinCryptSSHAgent](https://github.com/rfdonnelly/WinCryptSSHAgent), another fork of the original.
+> 
+> Changes from [boypt/WinCryptSSHAgent](https://github.com/boypt/WinCryptSSHAgent):
+> 
+> * Self-service key import — auto-load at startup plus tray import, no `ssh-add` needed.
+> * Signing confirmation — Manual/Auto mode per signing request, persisted across restarts.
+> * Source-tagged notifications — toasts show the requesting transport with categorized icons.
+> * Windows ARM64 builds — `make all` builds amd64 and ARM64 binaries; release builds are versioned from Git tags.
+> * Broader protocol support — XShell Xagent compatibility, Hyper-V vsock, graceful shutdown.
+> 
+> Change from [rfdonnelly/WinCryptSSHAgent](https://github.com/rfdonnelly/WinCryptSSHAgent):
+> 
+> * Added `--smart-card-logon-only` option.
+> 
+>   This option filters Windows Certificate Store certificates to include only those that have both of the following Extended/Enhanced Key Usage OIDs:
+> 
 >   * Client Authentication (1.3.6.1.5.5.7.3.2)
 >   * Smart Card Logon (1.3.6.1.4.1.311.20.2.2)
->
-> It has no affect on the self-service key import introduced in v1.2.0, enabling you to only use smart card certificates from the Windows Certificate Store alongside your SSH private keys.
->
-> ### Instructions
->
-> 1. Download the [latest release](https://github.com/martinj9320/WinCryptSSHAgent/releases/tag/v1.2.3)
-> 2. Add a shortcut with the `--smart-card-logon-only` option to the `shell:startup` folder
----
-
-> This repository is a maintained fork based on upstream [`buptczq/WinCryptSSHAgent`](https://github.com/buptczq/WinCryptSSHAgent) (base commit: `1e526e8`).
-
-## Fork Enhancements
-
-- **Self-service key import** — auto-load at startup plus tray import, no `ssh-add` needed.
-- **Signing confirmation** — Manual/Auto mode per signing request, persisted across restarts.
-- **Source-tagged notifications** — toasts show the requesting transport with categorized icons.
-- **Windows ARM64 builds** — amd64 + arm64 binaries from `make`, versioned from Git tags.
-- **Broader protocol support** — XShell Xagent compatibility, Hyper-V vsock, graceful shutdown.
 
 ## Introduction
 
-Windows applications use several incompatible SSH agent interfaces. Native OpenSSH clients use a Windows named pipe, PuTTY-family applications use the Pageant protocol, Git for Windows, MSYS2 and Cygwin use a Cygwin-compatible socket, XShell uses its own Xagent protocol — and WSL clients arrive over Unix sockets and Hyper-V vsock.
+WinCrypt SSH Agent is an SSH agent based on the Windows CryptoAPI.
 
-WinCryptSSHAgent connects all of these client interfaces to your keys in one place, so a single agent serves every client. Keys come from the Windows Certificate Store — user certificates and smart cards such as Yubikey PIV work natively without installing any driver — or from an in-memory keyring (auto-loaded `~/.ssh` keys and tray imports, never written to disk). It runs as a notification-area application.
+It allows other programs to use SSH keys stored in the Windows Certificate Store for authentication. Windows user certificates and PIV-compatible smart cards, such as YubiKeys, are accessed through the Windows Certificate Store. Some cards or algorithms, such as YubiKey ECC certificates, may require the card manufacturer's smart-card minidriver.
+
+OpenSSH private keys can also be loaded into an in-memory keyring. Imported keys and passphrases are kept in memory and are not written to disk.
 
 ## Overview
+
 ![Overview](overview.svg)
 
 ## Feature
 
-* One agent for fragmented Windows clients: named pipe, Pageant, Cygwin socket, XShell Xagent, WSL and Hyper-V vsock
-* Work with smart cards natively without installing any driver in Windows (PIV only)
-* Support for OpenSSH certificates (so you can use your smart card with an additional OpenSSH certificate)
-* In-memory keyring backend: imported keys live only in process memory, never persisted
-* Good compatibility
+* Use PIV-compatible smart cards through the Windows Certificate Store (some cards or algorithms may require a smart-card minidriver)
+* Use OpenSSH certificates with smart-card keys
+* Automatically load OpenSSH private keys at startup or import them from the tray menu
+* Choose Auto Confirm or Manual Confirm for signing requests
+* Show the requesting client in authentication notifications
+* Select Smart Card Logon certificates with `--smart-card-logon-only`
+* Build for Windows amd64 and ARM64
 
 ## Compatibility
 
-There are many different, mutually incompatible SSH agent interfaces on Windows. This project implements the popular ones side by side:
+There are several different SSH agent protocols used by Windows applications. WinCrypt SSH Agent supports:
 
+* Cygwin UNIX Socket
+* Windows UNIX Socket (Windows 10 version 1803 or later)
 * Windows OpenSSH named pipe
-* Pageant SSH agent protocol
-* Cygwin / MSYS2 socket
-* WSL (Unix socket and Hyper-V vsock)
-* XShell Xagent protocol
+* Pageant SSH Agent Protocol
+* XShell Xagent Protocol
+* Hyper-V vsock for WSL2 and Linux guests
 
-With all of these served by one running agent, this project is compatible with most SSH clients in Windows. For example:
+With these protocols, one running agent can serve many SSH clients, including:
 
 * Git for Windows
 * Windows Subsystem for Linux
@@ -63,163 +63,122 @@ With all of these served by one running agent, this project is compatible with m
 * SecureCRT
 * XShell
 * Cygwin
-* MINGW
+* MSYS2 / MinGW
 * ...
+
+Some clients that use the Pageant protocol connect automatically and do not require a separate setting in the tray menu.
 
 ## Installing
 
 ### Manually Install
 
-Stable versions can be obtained from the release page. 
-
-Additionally, you may make a shortcut of this application to the startup folder.
+Download a build from the [Releases page](https://github.com/martinj9320/WinCryptSSHAgent/releases). Create a shortcut in the Windows Startup folder if you want the agent to start when you sign in.
 
 ## Usage
 
 ### Basic Usage
 
-1. Start WinCryptSSHAgent
-2. Right-click the icon on your taskbar
-3. You can get necessary information by selecting your interesting item in the menu
+1. Start WinCryptSSHAgent.
+2. Right-click its notification-area icon.
+3. Select a menu item to view or copy the settings for an SSH client.
 
-Note: Some SSH clients using Pageant Protocol, e.g., Putty, XShell and Jetbrains, needn't any setting in system wide, thus you can't see Pageant in the menu.
+Use **Show Public Keys** to view or copy the available public keys. Choose **Import Key…** to add a private key to the in-memory keyring.
 
-Check [Yubikey with WSL tutorial](doc/wsl_tutorial.md) to start using Yubikey with SSH on WSL.
+See the [YubiKey with WSL tutorial](doc/wsl_tutorial.md) for an example of using a PIV smart card with SSH from WSL.
 
 ### Work with Xshell
 
-1. Install and run WinCryptSSHAgent
+1. Install and run WinCryptSSHAgent.
 2. Open the Properties dialog box of your session.
-3. From Category, select 'SSH', Select 'Use Xagent (SSH agent)' for passphrase handling.
+3. From Category, select 'SSH' and select 'Use Xagent (SSH agent)' for passphrase handling.
 4. From Category, select 'Authentication' and select 'Public Key' as the authentication method.
 
-### Hyper-V / WSL2 vsock
+### Work with WSL
 
-The agent listens on a Hyper-V vsock service (ID `0x22223333`) so that guests can reach it without any port forwarding or socket files:
+Select **Show WSL Settings** from the tray menu and use the displayed command to set `SSH_AUTH_SOCK` in WSL. On supported Windows versions, the agent uses a UNIX socket. If that is unavailable, it provides a local TCP endpoint that can be bridged from WSL with `socat`.
 
-- **WSL2 / Linux on Hyper-V** — from inside the guest, bridge a local Unix socket to the host over AF_VSOCK (protocol 40). The tray menu *Show WSL2 / Linux On Hyper-V Settings* copies a ready-to-paste `socat` snippet:
+### Work with Hyper-V / WSL2
 
-  ```bash
-  export SSH_AUTH_SOCK=/tmp/wincrypt-hv.sock
-  ss -lnx | grep -q $SSH_AUTH_SOCK || {
-    rm -f $SSH_AUTH_SOCK
-    (setsid nohup socat UNIX-LISTEN:$SSH_AUTH_SOCK,fork \
-      SOCKET-CONNECT:40:0:x0000x33332222x02000000x00000000 >/dev/null 2>&1) & disown
-  }
-  ```
+The agent can accept connections over a Hyper-V vsock service (ID `0x22223333`). For WSL2 or Linux guests, select **Show WSL2 / Linux On Hyper-V Settings** from the tray menu and use the provided `socat` command to connect a guest-side UNIX socket to the host agent. This does not require port forwarding. `socat` 1.7.4 or later also supports the `VSOCK-CONNECT` address form.
 
-  (`x0000x33332222x02000000x00000000` is the host VM's ID; socat ≥ 1.7.4 also accepts `VSOCK-CONNECT:2:0x22223333`.)
+When WinCryptSSHAgent runs inside a Windows Hyper-V guest, it detects the host agent and forwards signing requests to it. Run `WinCryptSSHAgent.exe -i` in the guest to register the communication service; this requires administrator privileges and a reboot.
 
-- **Windows guest VM under Hyper-V** — running the same exe inside the guest detects the host via `ConnectHyperV` (dial to `HvsockGUIDParent`) and switches to *HVAgent* mode: all signing requests are forwarded over vsock to the host's agent, which holds the actual certificates / smart-card keys. On the physical host the dial fails (not supported), so the process stays in local CAPI mode. The `-i` flag registers the guest communication service in the guest's registry (requires elevation).
+### Smart Card Logon Only
 
-Both paths use the same vsock channel; the difference is whether the guest-side endpoint is a Go program (HVAgent) or a pure byte-forwarder (socat).
+Add `--smart-card-logon-only` to the application shortcut to select certificates for Smart Card Logon. The option applies to certificates in the Windows Certificate Store, not private keys loaded into the in-memory keyring.
+
+The filter uses these Extended/Enhanced Key Usage OIDs:
+
+* Client Authentication (1.3.6.1.5.5.7.3.2)
+* Smart Card Logon (1.3.6.1.4.1.311.20.2.2)
+
+### OpenSSH Private Keys
+
+At startup, the agent looks for private keys matching `~/.ssh/id_*`, excluding public-key and certificate files. Set `WCSA_KEYS` to add other key paths, separated by `;` on Windows. Paths containing spaces are supported. Use **Import Key…** in the tray menu to select a key manually.
+
+For encrypted keys, startup loading tries `WCSA_KEY_PASSPHRASE`, then the optional `WCSA_ASKPASS` helper, and then a passphrase dialog. A passphrase entered successfully can be reused for other keys during the current run. The startup variables are cleared after auto-loading; manual imports use the built-in dialog.
+
+If a key cannot be read, parsed or unlocked, it is skipped and loading continues. PuTTY `.ppk` files are not supported; convert them to OpenSSH format with PuTTYgen.
 
 ### OpenSSH Certificates
 
-OpenSSH supports authentication using SSH certificates. Certificates contain a public key, identity information and are signed with a standard SSH key.
+OpenSSH certificates contain a public key and identity information signed with an SSH key. They use a format different from X.509, so an X.509 certificate cannot be converted into an OpenSSH certificate.
 
-Unlike TLS using X.509, OpenSSH uses a special certificate format, thus we can't convert your X.509 certificate into OpenSSH format.
-
-To deal with OpenSSH Certificates, this project introduces a public key override mechanism.
-
-If you want to work with OpenSSH certificates, you should put your OpenSSH Certificates in your `user profile` folder, rename them to `<Your Certificate Common Name>-cert.pub` or `<Your Certificate Serial Number>-cert.pub`.
+To use an OpenSSH certificate with a smart-card key, place the certificate in your user profile folder and name it `<Your Certificate Common Name>-cert.pub` or `<Your Certificate Serial Number>-cert.pub`.
 
 ### Signing Confirmation
 
-By default the agent runs in **Auto Confirm** mode: signing requests from SSH clients are authorized immediately.
+By default, signing requests are confirmed automatically. Select **Manual Confirm** from the tray menu to approve each signing request in a Yes/No dialog. The selected mode is saved in the current user's registry and restored when the agent starts. In Auto Confirm mode, authentication notifications show the key and requesting client.
 
-Switch to **Manual Confirm** from the tray menu (`•` marks the current mode) to review every signing request in a Yes/No dialog before it is authorized.
-
-- The selected mode is persisted in the registry at `HKCU\Software\WinCryptSSHAgent` (`ConfirmRequired`), so it survives restarts.
-- Start with `-confirm` or set `WCSA_CONFIRM=1` to force Manual Confirm; this overrides the registry and updates it.
-
-### Key Auto-Load & Import
-
-At startup the agent auto-imports `~/.ssh/id_*` (excluding `*.pub` / `*.cert`) plus extra paths from `WCSA_KEYS` (separated by `;`); the tray menu `Import Key…` imports a chosen file with the same logic.
-
-- Encrypted keys are tried with `WCSA_KEY_PASSPHRASE`, then the `WCSA_ASKPASS` helper (auto-load only), then a system password dialog; an entered passphrase is reused in memory for the remaining keys in the run.
-- Failures never block: decrypt failure shows a warning dialog, cancelled prompts and unreadable files are skipped with a toast.
-- `WCSA_KEYS`, `WCSA_KEY_PASSPHRASE` and `WCSA_ASKPASS` are honored only during startup auto-load and cleared from the process environment afterwards, so child processes never inherit them and manual imports always use the built-in dialog.
-- PuTTY `.ppk` files are not supported — convert them with PuTTYgen to OpenSSH format first.
+Start with `-confirm` or set `WCSA_CONFIRM=1` to enable Manual Confirm.
 
 ### Debug log
 
-1. Run `setx WCSA_DEBUG 1`
-2. Reboot to take effect
-3. Reproduce your problem
-4. The debug log is located in `%USERPROFILE%\WCSA_DEBUG.log`
-
-### Contribute
-
-**Please use issues for everything**
-
-- For a small change, just send a PR.
-- For bigger changes open an issue for discussion before sending a PR.
-- You can also contribute by:
-  - Reporting issues
-  - Suggesting new features or enhancements
-  - Improve/fix documentation
+1. Run `setx WCSA_DEBUG 1`.
+2. Close and restart WinCryptSSHAgent to take effect.
+3. Reproduce the problem.
+4. Find the log at `%USERPROFILE%\WCSA_DEBUG.log`.
 
 ## Advanced User Manual
 
 ### Environment variables
 
 | Variable | Effect |
-|---|---|
-| `WCSA_DEBUG=1` | Append stdout/stderr to `%USERPROFILE%\WCSA_DEBUG.log` (the binary has no console window). |
-| `WCSA_CONFIRM=1` | Force Manual Confirm; overwrites the registry value. |
-| `WCSA_KEYS` | Extra private-key files to auto-load, separated by `;` on Windows; cleared from the environment after auto-load. |
-| `WCSA_KEY_PASSPHRASE` | Single passphrase tried for all encrypted keys during auto-load (memory only, never logged); cleared from the environment after auto-load. |
+| --- | --- |
+| `WCSA_DEBUG=1` | Write diagnostic output to `%USERPROFILE%\WCSA_DEBUG.log`. |
+| `WCSA_CONFIRM=1` | Force Manual Confirm mode. |
+| `WCSA_KEYS` | Additional startup key paths, separated by `;` on Windows. Cleared after auto-loading. |
+| `WCSA_KEY_PASSPHRASE` | Passphrase tried for encrypted keys during startup loading; cleared after loading. |
+| `WCSA_ASKPASS` | Helper invoked with the passphrase prompt as its argument during startup loading only; it inherits the agent's environment and is cleared after loading. |
 | `WCSA_CHECKSVR=1` | Before CAPI signing, warn if the Smart Card service is stopped and offer to start it. |
-| `WCSA_ASKPASS` | Helper program run to obtain a key passphrase during startup auto-load only; the helper inherits the agent's environment, and the variable is cleared after auto-load together with `WCSA_KEYS`/`WCSA_KEY_PASSPHRASE` so later manual imports use the built-in dialog. Modeled on OpenSSH `ssh-add`'s `SSH_ASKPASS`, but intentionally scoped to startup: its main purpose is non-interactive passphrase acquisition when the agent auto-imports keys at launch. |
-| `SSH_AUTH_SOCK` | Standard client-side variable pointing at the agent endpoint (named pipe, `wincrypt-cygwin.sock`, …); each tray menu shows the value to export. |
+| `SSH_AUTH_SOCK` | Client-side socket setting; use the value shown by the relevant tray-menu item. |
 
 ### Command-line flags
 
 Run `WinCryptSSHAgent.exe -h` for the full list.
 
 | Flag | Effect |
-|---|---|
+| --- | --- |
 | `-i` | Install the Hyper-V guest communication service (requires elevation). |
-| `-confirm` | Force Manual Confirm (same as `WCSA_CONFIRM=1`). |
-| `-disable-capi` | Serve only the in-memory keyring, skip the Windows Certificate Store. |
+| `-confirm` | Require user approval before signing. |
+| `-disable-capi` | Use only the in-memory keyring instead of the Windows Certificate Store. |
 | `-disable-pin-cache` | Clear the smart-card PIN cache after each operation. |
+| `--smart-card-logon-only` | Filter certificates for Smart Card Logon use. |
 
 ### Registry
 
 | Key | Purpose |
-|---|---|
-| `HKCU\Software\WinCryptSSHAgent` → DWORD `ConfirmRequired` | Persisted confirm mode (`0` = Auto, `1` = Manual; absent = Auto). Written on every toggle, `-confirm`, or `WCSA_CONFIRM=1`. |
-| `HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Virtualization\GuestCommunicationServices\<service-GUID>` | Hyper-V guest service registration written by `-i` (requires admin). |
+| --- | --- |
+| `HKCU\Software\WinCryptSSHAgent` → DWORD `ConfirmRequired` | Saved signing mode (`0` = Auto, `1` = Manual; absent means Auto). |
+| `HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Virtualization\GuestCommunicationServices\<service-GUID>` | Hyper-V guest service registration created by `-i` (requires administrator privileges). |
 
-### Files
+### Contribute
 
-- The binary lives wherever you put it (no installer). Socket files (`%USERPROFILE%\wincrypt-cygwin.sock`, `wincrypt-wsl.sock`) are created at startup and removed on exit; `%USERPROFILE%\WCSA_DEBUG.log` exists only with `WCSA_DEBUG=1`. Imported keys and passphrases live only in process memory and are never written to disk.
+**Please use issues for everything**
 
-### Complete uninstall
-
-Remove the following:
-
-- The exe and the startup-folder shortcut if you made one.
-- Leftover socket files: `%USERPROFILE%\wincrypt-cygwin.sock` and `wincrypt-wsl.sock`.
-- `%USERPROFILE%\WCSA_DEBUG.log` (only exists with `WCSA_DEBUG=1`).
-- The settings key `HKCU\Software\WinCryptSSHAgent`.
-- The `WinCryptSSHAgent` service subkey under the Hyper-V `GuestCommunicationServices` key (only if you ever ran `-i`; needs elevation).
-
-Or run it all at once in PowerShell:
-
-```powershell
-# Stop a running agent (or Quit it from the tray menu first).
-Stop-Process -Name WinCryptSSHAgent,WinCryptSSHAgent-arm64 -ErrorAction SilentlyContinue
-
-# Leftover socket files, debug log and settings.
-Remove-Item "$env:USERPROFILE\wincrypt-cygwin.sock", "$env:USERPROFILE\wincrypt-wsl.sock" -Force -ErrorAction SilentlyContinue
-Remove-Item "$env:USERPROFILE\WCSA_DEBUG.log" -ErrorAction SilentlyContinue
-Remove-Item HKCU:\Software\WinCryptSSHAgent -Recurse -ErrorAction SilentlyContinue
-
-# Hyper-V guest service registration (only present if you ever ran -i).
-$svcRoot = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Virtualization\GuestCommunicationServices'
-Get-ChildItem $svcRoot -ErrorAction SilentlyContinue |
-  Where-Object { (Get-ItemProperty $_.PSPath -ErrorAction SilentlyContinue).ElementName -eq 'WinCryptSSHAgent' } |
-  Remove-Item -Recurse
-```
+- For a small change, just send a PR.
+- For bigger changes, open an issue for discussion before sending a PR.
+- You can also contribute by:
+  - Reporting issues
+  - Suggesting new features or enhancements
+  - Improving/fixing documentation
